@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { useState, useEffect } from 'react';
 import Searchbar from 'components/Searchbar/Searchbar';
 import ImageGallery from 'components/ImageGallery/ImageGallery';
 import Loader from './components/Loader/Loader';
@@ -12,134 +12,87 @@ import Button from 'components/Button/Button';
 import styles from './App.module.scss';
 import { warningMessage, errorMessage } from './utils/warningMessage';
 
-class App extends Component {
-  state = {
-    images: [],
-    loading: false,
-    error: null,
-    query: '',
-    page: 1,
-    totalImages: null,
-    totalPages: null,
-    showModal: false,
-    largeImageURL: '',
-    status: 'idle',
-  };
+export default function App() {
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(null);
+  const [largeImageURL, setLargeImageURL] = useState('');
+  const [showModal, setShowModal] = useState(false);
 
-  componentDidUpdate(prevProps, prevState) {
-    const { query, page } = this.state;
-    if (prevState.query !== query.trim() || prevState.page !== page) {
-      this.fetchImages();
+  useEffect(() => {
+    if (query) {
+      const fetchImages = async () => {
+        const perPage = 12;
+
+        try {
+          setLoading(true);
+
+          const data = await searchImgs(query, page);
+          setTotalPages(Math.round(data.totalHits / perPage));
+
+          if (data.totalHits === 0) {
+            warningMessage();
+          }
+          setImages(prevImages => [...prevImages, ...data.hits]);
+        } catch (error) {
+          errorMessage(error.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchImages();
     }
-  }
+  }, [page, query]);
 
-  async fetchImages() {
-    const perPage = 12;
-
-    try {
-      this.setState({ status: 'pending' });
-      const { query, page } = this.state;
-      const data = await searchImgs(query, page);
-      const totalPages = Math.round(data.totalHits / perPage);
-
-      if (data.totalHits === 0) {
-        warningMessage();
-      }
-      this.setState(({ images }) => ({
-        images: [...images, ...data.hits],
-        totalImages: data.totalHits,
-        totalPages: totalPages,
-        status: 'resolved',
-      }));
-    } catch (error) {
-      this.setState({ error: error.message, status: 'rejected' });
-      errorMessage(error.message);
-    }
-  }
-
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-    }));
+  const toggleModal = () => {
+    setShowModal(prevState => !prevState);
   };
 
-  onImageClick = largeImageURL => {
-    this.setState({ largeImageURL, showModal: true });
+  const onImageClick = largeImageURL => {
+    setLargeImageURL(largeImageURL);
+    setShowModal(true);
   };
 
-  searchImages = ({ query }) => {
+  const searchImages = ({ query }) => {
     if (query === '') {
-      this.setState({ status: 'idle', images: [] });
+      setImages([]);
+      setTotalPages(null);
       return;
     }
-    if (query !== this.state.query) {
-      this.setState({ query, page: 1, images: [] });
-    } else {
-      this.setState({ query });
-    }
+    setQuery(query);
+    setPage(1);
+    setImages([]);
   };
 
-  loadMore = () => {
-    this.setState(({ page }) => ({
-      page: page + 1,
-    }));
+  const loadMore = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
-  render() {
-    const { images, showModal, largeImageURL, totalPages, page, status } =
-      this.state;
-    const { searchImages, loadMore, onImageClick } = this;
+  return (
+    <>
+      <Searchbar onSubmit={searchImages} />
+      {!images.length && (
+        <p className={styles.greeting}>Let's look for the pictures</p>
+      )}
 
-    if (status === 'idle') {
-      return (
-        <>
-          <Searchbar onSubmit={searchImages} />
-          <p className={styles.greeting}>Let's look for the pictures</p>
-        </>
-      );
-    }
+      {loading && <Loader />}
 
-    if (status === 'pending') {
-      return (
-        <>
-          <Searchbar onSubmit={searchImages} />
-          <Loader />
-        </>
-      );
-    }
+      <div className={styles.App}>
+        {showModal && (
+          <Modal onClose={toggleModal}>
+            <LargeImage src={largeImageURL} />
+            <IconButton onClick={toggleModal} aria-label="Close image">
+              <CloseIcon width="20px" height="20px" fill="#7e7b7b" />
+            </IconButton>
+          </Modal>
+        )}
 
-    if (status === 'rejected') {
-      return (
-        <>
-          <Searchbar onSubmit={searchImages} />
-        </>
-      );
-    }
+        <ImageGallery images={images} onImageClick={onImageClick} />
 
-    if (status === 'resolved') {
-      return (
-        <>
-          <Searchbar onSubmit={searchImages} />
-          <div className={styles.App}>
-            {showModal && (
-              <Modal onClose={this.toggleModal}>
-                <LargeImage src={largeImageURL} />
-                <IconButton onClick={this.toggleModal} aria-label="Close image">
-                  <CloseIcon width="20px" height="20px" fill="#7e7b7b" />
-                </IconButton>
-              </Modal>
-            )}
-
-            <ImageGallery images={images} onImageClick={onImageClick} />
-
-            {totalPages > 1 && page < totalPages && (
-              <Button onClick={loadMore} />
-            )}
-          </div>
-        </>
-      );
-    }
-  }
+        {totalPages > 1 && page < totalPages && <Button onClick={loadMore} />}
+      </div>
+    </>
+  );
 }
-
-export default App;

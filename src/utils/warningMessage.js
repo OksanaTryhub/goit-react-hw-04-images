@@ -19,7 +19,7 @@ function warningMessage() {
 
 function errorMessage(error) {
   Notiflix.Notify.warning(
-    `Oops... Something's gone wrong. Let's try again...  ` + error
+    `Oops... Something's gone wrong. Let's try again... ` + error
   );
 }
 
