@@ -55,13 +55,17 @@ export default function App() {
     setShowModal(true);
   };
 
-  const searchImages = ({ query }) => {
-    if (query === '') {
-      setImages([]);
-      setTotalPages(null);
+  const searchImages = ({ searchQuery }) => {
+    if (searchQuery.trim() === query) {
       return;
     }
-    setQuery(query);
+    if (searchQuery.trim() === '') {
+      setImages([]);
+      setTotalPages(null);
+      setQuery('');
+      return;
+    }
+    setQuery(searchQuery.trim());
     setPage(1);
     setImages([]);
   };

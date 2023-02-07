@@ -4,18 +4,16 @@ import styles from './Searchbar.module.scss';
 import { ReactComponent as SearchIcon } from '../SvgIcons/search.svg';
 
 export default function Searchbar({ onSubmit }) {
-  const [query, setQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleChange = ({ target }) => {
     const { value } = target;
-    setQuery(value);
+    setSearchQuery(value);
   };
 
   const handleSubmit = e => {
     e.preventDefault();
-
-    onSubmit({ query });
-    setQuery('');
+    onSubmit({ searchQuery });
   };
 
   return (
@@ -29,7 +27,7 @@ export default function Searchbar({ onSubmit }) {
 
         <input
           className={styles.searchForm__input}
-          value={query}
+          value={searchQuery}
           onChange={handleChange}
           type="text"
           name="query"
