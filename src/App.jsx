@@ -77,7 +77,7 @@ export default function App() {
   return (
     <>
       <Searchbar onSubmit={searchImages} />
-      {!images.length && (
+      {!images.length && !loading && (
         <p className={styles.greeting}>Let's look for the pictures</p>
       )}
 
@@ -95,7 +95,9 @@ export default function App() {
 
         <ImageGallery images={images} onImageClick={onImageClick} />
 
-        {totalPages > 1 && page < totalPages && <Button onClick={loadMore} />}
+        {!loading && totalPages > 1 && page < totalPages && (
+          <Button onClick={loadMore} />
+        )}
       </div>
     </>
   );
